@@ -1,0 +1,2 @@
+/home/tom/workspace_cpp/garmintools-0.10/CMakeFiles/mytest.dir
+/home/tom/workspace_cpp/garmintools-0.10/CMakeFiles/usb_comm.dir

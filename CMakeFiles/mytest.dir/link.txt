@@ -1,0 +1,1 @@
+/usr/bin/c++       CMakeFiles/mytest.dir/src/tst.cpp.o  -o bin/mytest -rdynamic -L/src/utils -L/opt/local/lib lib/libusb_comm.a -lgarmintools -lusb -lboost_system-mt -lboost_filesystem-mt -Wl,-rpath,/src/utils:/opt/local/lib 

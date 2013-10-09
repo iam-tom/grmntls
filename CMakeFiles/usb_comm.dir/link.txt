@@ -1,0 +1,2 @@
+/usr/bin/ar cr lib/libusb_comm.a  CMakeFiles/usb_comm.dir/src/usb_comm.c.o
+/usr/bin/ranlib lib/libusb_comm.a

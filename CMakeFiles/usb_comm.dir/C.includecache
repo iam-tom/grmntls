@@ -1,0 +1,32 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/tom/workspace_cpp/garmintools-0.10/src/config.h
+
+/home/tom/workspace_cpp/garmintools-0.10/src/garmin.h
+stdio.h
+-
+usb.h
+-
+math.h
+-
+
+/home/tom/workspace_cpp/garmintools-0.10/src/usb_comm.c
+config.h
+/home/tom/workspace_cpp/garmintools-0.10/src/config.h
+stdio.h
+-
+string.h
+-
+ctype.h
+-
+usb.h
+-
+garmin.h
+/home/tom/workspace_cpp/garmintools-0.10/src/garmin.h
+
