@@ -8,12 +8,12 @@
 
 bool DEBUG=false;
 
-double interpolate_split(Eigen::VectorXd& dist,Eigen::VectorXd& time,double split_dist)
+double interpolate_split(Eigen::VectorXd& x,Eigen::VectorXd& y,double x0)
 {
-  double split_time=0.0;
+  double y0=0.0;
 
   Eigen::VectorXd temp;
-  temp=dist.array()-split_dist;
+  temp=x.array()-x0;
   temp=abs(temp.array());
 
   // get the elements for interpolation
@@ -22,41 +22,80 @@ double interpolate_split(Eigen::VectorXd& dist,Eigen::VectorXd& time,double spli
   xa=temp.minCoeff(&min_index);
   if(xa >0)
   {
-      xa=dist[min_index];
-      ya=time[min_index];
-      xb=dist[min_index+1];
-      yb=time[min_index+1];
+      xa=x[min_index];
+      ya=y[min_index];
+      xb=x[min_index+1];
+      yb=y[min_index+1];
   }
    
   else if (xa <0)
   {
-      xa=dist[min_index-1];
-      ya=time[min_index-1];
-      xb=dist[min_index];
-      yb=time[min_index];
+      xa=x[min_index-1];
+      ya=y[min_index-1];
+      xb=x[min_index];
+      yb=y[min_index];
   }
   else
   {
     // no need for interpolation
-    std::cerr<<"no int"<<std::endl;
-    split_time=ya;
-    return split_time;
+    y0=y[min_index];
+    return y0;
   }
 
 
   //std::cout<<" xa:"<<xa<<" ya: "<<ya<<"\n xb:"<<xb<<" yb: "<<yb<<std::endl;
-  split_time=ya+( ((yb-ya) / (xb-xa)) * (split_dist-xa));
-  return split_time;
+  y0=ya+( ((yb-ya) / (xb-xa)) * (x0-xa));
+  return y0;
 
 }
-void calc_splits(Eigen::VectorXd& t,Eigen::VectorXd& d)
+
+void sec2hminsec(double& dec,std::vector<int>& h_min_sec)
+{
+  h_min_sec.resize(3);
+  h_min_sec[0]=floor(dec/3600);
+  h_min_sec[1]=floor((dec-h_min_sec[0]*3600)/60);
+  h_min_sec[2]=floor(dec-(h_min_sec[0]*3600) - (h_min_sec[1]*60) );
+
+  return;
+}
+
+void analyze_laps(Eigen::VectorXd t,Eigen::VectorXd d,Eigen::VectorXd l)
+{
+
+  Eigen::VectorXd lap_dist_vec;
+  lap_dist_vec.resize(l.size());
+  t=t.array()-t[0];
+  l=l.array()-l[0];
+
+  for(int no_lap=0;no_lap<l.size();no_lap++)
+  {
+  double lap_dist=interpolate_split(t,d,l[no_lap]);
+  lap_dist_vec[no_lap]=lap_dist;
+
+  if (no_lap>0)
+  {
+    double delta_t=l[no_lap]-l[no_lap-1];
+    std::vector<int>hex;
+    sec2hminsec(delta_t,hex);
+    double delta_d=lap_dist_vec[no_lap]-lap_dist_vec[no_lap-1];
+
+
+    std::cout<<"time for lap "<<no_lap<<" = "<<hex[1]<<","<<hex[2]<<" distance = "<<delta_d<<std::endl;
+  }
+  }
+
+
+  
+
+}
+void calc_splits(Eigen::VectorXd t,Eigen::VectorXd d)
 {
 
 
   //eliminate last entries
 
   std::cout<<" Aggregated Kilometer splits"<<std::endl;
-  std::cout<<"[m]          "<<"[min] [sec]"<<std::endl;
+  std::cout<<"[m]          "<<"[h] [min] [sec]"<<std::endl;
   std::cout<<"---------------------------"<<std::endl;
   //reduce time
   t=t.array()-t(1,0);
@@ -69,11 +108,86 @@ void calc_splits(Eigen::VectorXd& t,Eigen::VectorXd& d)
   {
 
   double split_t2=interpolate_split(d,t,dist);
-  std::cout<<dist<<" ......... "<<floor((split_t2)/60)<<":"<<floor((split_t2-floor(split_t2))*60)<<" "<<std::endl;
+  //std::cout<<dist<<" ......... "<<floor((split_t2)/60)<<":"<<floor((split_t2-floor(split_t2))*60)<<" "<<std::endl;
+  std::vector<int>time_hex;
+  sec2hminsec(split_t2,time_hex);
+  std::cout<<dist<<" ......... "<<time_hex [0]<<" "<<time_hex [1]<<":"<<time_hex[2]<<" "<<std::endl;
+
+
+
+
   //std::cout<<"-----------------------------------------------------------------"<<std::endl;
   
   dist+=1000;
   }
+}
+void extract_runs(garmin_data * gdata,std::vector<double>& t)
+{
+
+  // list processing
+  if (gdata->type==1)
+  {
+    garmin_list_node * node;
+    garmin_list * list;
+
+    // convert data to list format
+    gdata=garmin_list_data(gdata,0);
+
+
+    if(gdata->type==data_Dlist)
+    {
+      list=static_cast<garmin_list* >(gdata->data);
+    }
+    else
+    {
+      std::cout<<"data is: "<<gdata->type<<std::endl;
+    }
+
+    // initialize vectors
+    
+    for ( node=list->head;node!=NULL;node=node->next)
+    {
+      //std::cout<<"Filetype: "<<node->data->type<<std::endl;
+      switch (node->data->type)
+      {
+        case 1009:
+          {
+            D1009 * d1009;
+            garmin_data * run;
+            run=node->data;
+            d1009=static_cast<D1009*>(run->data);
+            break;
+          }
+        default:
+          {
+            break;
+          }
+      }
+    }
+
+
+  }
+  // when garmin data is no list but single element
+  else
+  {
+      switch (gdata->type)
+      {
+        case 1009:
+          {
+            D1009 * d1009;
+            d1009=static_cast<D1009*>(gdata->data);
+
+
+          }
+        default:
+          {
+            break;
+          }
+      }
+
+
+  }
+
 }
 void extract_laps(garmin_data * gdata,std::vector<double>& t)
 {
@@ -125,8 +239,21 @@ void extract_laps(garmin_data * gdata,std::vector<double>& t)
   // when garmin data is no list
   else
   {
-    std::cout<<"no list - exit"<<std::endl;
-    exit(1);
+      switch (gdata->type)
+      {
+        case 1015:
+          {
+            D1015 * d1015;
+            garmin_data * lap;
+            d1015=static_cast<D1015*>(gdata->data);
+            t.push_back(static_cast<double>(d1015->start_time));
+            break;
+          }
+        default:
+          {
+            break;
+          }
+      }
   }
 
 }
@@ -213,11 +340,19 @@ int main(int argc, const char *argv[])
 
   Eigen::Map<Eigen::VectorXd> d_total_map(d_total.data(), d_total.size());
   Eigen::Map<Eigen::VectorXd> t_total_map(t_total.data(), t_total.size());
+  Eigen::Map<Eigen::VectorXd> t_lap_map(t_lap.data(), t_lap.size());
+
   Eigen::VectorXd d_total_vec(d_total.size());
   Eigen::VectorXd t_total_vec(d_total.size());
+  Eigen::VectorXd t_lap_vec(t_lap.size());
+
   d_total_vec=d_total_map;
   t_total_vec=t_total_map;
+  t_lap_vec=t_lap_map;
+
   calc_splits(t_total_vec,d_total_vec);
+  analyze_laps(t_total_vec,d_total_vec,t_lap_vec);
+
   //garmin_print_data(gdata,ofile,1);
 
   return 0;
