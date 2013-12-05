@@ -84,10 +84,90 @@ void analyze_laps(Eigen::VectorXd t,Eigen::VectorXd d,Eigen::VectorXd l)
   }
   }
 
+}
 
-  
+void fastest_xm(Eigen::VectorXd t, Eigen::VectorXd d,int x)
+{
+  // fastest km between   >------|.....|------->
+  //                      d0    da     db    dmax
+  double dmax=d[d.size()-2];
+  std::cout<<"DMAX"<<dmax<<std::endl;
+
+  double da,db,da_min,db_min;//=d[0]+1000;
+  int i=0;
+  double dt_min=std::numeric_limits<double>::max();
+  da=0;
+  db=0;
+  double ta,tb,dt;
+
+  for(int i=0;i<d.size();++i)
+  {
+      da=d[i];
+      db=d[i]+x;
+      if(db<0 || db>1e13) continue;
+      if(db>dmax)  break;
+      ta=t[i];
+      tb=interpolate_split(d,t,db);
+      dt=tb-ta;
+
+      if(dt<dt_min)
+      {
+        dt_min=dt;
+        da_min=da;
+        db_min=db;
+      }
+  }
+
+    std::vector<int> hex;
+    sec2hminsec(dt_min,hex);
+    std::cout<<"Fastest "<<x<<" m"<<std::endl;
+    std::cout<<da_min<<" --> "<<db_min<<" | "<<hex[1]<<"min "<<hex[2]<<"s"<<std::endl; 
+
+
 
 }
+void fastest_km(Eigen::VectorXd t, Eigen::VectorXd d)
+{
+  // fastest km between   >------|.....|------->
+  //                      d0    da     db    dmax
+  double dmax=d[d.size()-2];
+  std::cout<<"DMAX"<<dmax<<std::endl;
+
+  double da,db,da_min,db_min;//=d[0]+1000;
+  int i=0;
+  double dt_min=std::numeric_limits<double>::max();
+  da=0;
+  db=0;
+  double ta,tb,dt;
+
+  for(int i=0;i<d.size();++i)
+  {
+      da=d[i];
+      db=d[i]+1000.0;
+      if(db<0 || db>1e13) continue;
+      if(db>dmax)  break;
+      ta=t[i];
+      tb=interpolate_split(d,t,db);
+      dt=tb-ta;
+
+      if(dt<dt_min)
+      {
+        dt_min=dt;
+        da_min=da;
+        db_min=db;
+      }
+  }
+
+    std::vector<int> hex;
+    sec2hminsec(dt_min,hex);
+    std::cout<<"Fastest km"<<std::endl;
+    std::cout<<da_min<<" --> "<<db_min<<" | "<<hex[1]<<"min "<<hex[2]<<"s"<<std::endl; 
+
+
+
+}
+  
+
 void calc_splits(Eigen::VectorXd t,Eigen::VectorXd d)
 {
 
@@ -259,6 +339,8 @@ void extract_laps(garmin_data * gdata,std::vector<double>& t)
 }
 void extract_points(garmin_data * gdata,std::vector<double>& d,std::vector<double>& t)
 {
+  int i=1;
+  i+=1;
 
   // list processing
   if (gdata->type==1)
@@ -276,7 +358,7 @@ void extract_points(garmin_data * gdata,std::vector<double>& d,std::vector<doubl
     }
     else
     {
-      std::cout<<"data is: "<<gdata->type<<std::endl;
+      std::cout<<i<<"data is: "<<gdata->type<<std::endl;
     }
 
     // initialize vectors
@@ -328,7 +410,7 @@ int main(int argc, const char *argv[])
   std::cout<<"OUTPUT PATH: "<<output_path.c_str()<<std::endl;
 
 
-  ofile=fopen(output_path.c_str(),"w");
+  //ofile=fopen(output_path.c_str(),"w");
 
   gdata=garmin_load(argv[1]);
   std::vector<double>d_total;
@@ -352,6 +434,10 @@ int main(int argc, const char *argv[])
 
   calc_splits(t_total_vec,d_total_vec);
   analyze_laps(t_total_vec,d_total_vec,t_lap_vec);
+  fastest_km(t_total_vec,d_total_vec);
+  fastest_xm(t_total_vec,d_total_vec,5000);
+  fastest_xm(t_total_vec,d_total_vec,10000);
+  fastest_xm(t_total_vec,d_total_vec,500);
 
   //garmin_print_data(gdata,ofile,1);
 
